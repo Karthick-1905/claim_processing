@@ -39,3 +39,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python & datalake
+.venv/
+venv/
+__pycache__/
+*.pyc
+data/*.csv
+data/*.json
+datalake/
