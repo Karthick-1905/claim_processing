@@ -154,6 +154,59 @@ export function DataLakePanel({ onDataMutated }: { onDataMutated: () => void }) 
     }
   };
 
+  const handleIngestXmlFeeds = async () => {
+    setFeedback("Ingesting ACORD XML and Health XML feeds from data lake gateway...");
+    try {
+      // Ingest the sample XML partner batch
+      const sampleXml = `<?xml version="1.0" encoding="UTF-8"?>
+<ClaimsBatch source="ACORD_GATEWAY_PARTNER">
+  <ACORDClaim>
+    <TransactionId>XML-TX-LAKE-8801</TransactionId>
+    <PolicyRef>POL-AUTO-88219</PolicyRef>
+    <InsuredRef>CUST-1001</InsuredRef>
+    <LossType>AUTO</LossType>
+    <LossDate>2026-03-20</LossDate>
+    <NoticeAt>2026-03-21</NoticeAt>
+    <TotalLossAmount>9200.00</TotalLossAmount>
+    <Currency>USD</Currency>
+    <LossNarrative>Front bumper impact with debris on highway.</LossNarrative>
+    <RepairFacilityId>GAR-77401</RepairFacilityId>
+    <ProducerId>AGT-5510</ProducerId>
+    <IncidentLocation>8400 North Mopac Expy</IncidentLocation>
+    <IncidentCity>Austin</IncidentCity>
+    <IncidentState>TX</IncidentState>
+    <InsuredZip>78759</InsuredZip>
+    <AutoDetails>
+      <Vin>1HGCR2F83HA019284</Vin>
+      <LicensePlate>TX-782-KKL</LicensePlate>
+      <Make>Honda</Make>
+      <Model>Accord Sport</Model>
+      <Year>2021</Year>
+      <RepairCost>9200.00</RepairCost>
+      <IsDrivable>true</IsDrivable>
+      <HasPoliceReport>true</HasPoliceReport>
+    </AutoDetails>
+  </ACORDClaim>
+</ClaimsBatch>`;
+
+      const res = await fetch("/api/claims/xml", {
+        method: "POST",
+        headers: { "Content-Type": "application/xml" },
+        body: sampleXml,
+      });
+      const json = await res.json();
+      if (json.success) {
+        setFeedback(`ACORD XML feeds successfully integrated (${json.successful_ingestions} claims) and sunk into Parquet!`);
+        fetchStatus();
+        onDataMutated();
+      } else {
+        setFeedback(`XML ingestion note: ${json.error || "Completed with notice"}`);
+      }
+    } catch (err) {
+      setFeedback(`XML ingestion failed: ${String(err)}`);
+    }
+  };
+
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-5 space-y-5 shadow-lg">
       {/* Header */}
@@ -162,16 +215,25 @@ export function DataLakePanel({ onDataMutated }: { onDataMutated: () => void }) 
           <Layers className="h-5 w-5 text-cyan-400" />
           <div>
             <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">
-              Big Data Lake & PySpark Analytics Engine
+              Big Data Lake, XML Feeds & PySpark Engine
             </h2>
             <p className="text-xs text-zinc-400">
-              Intermediate Apache Parquet Storage (Snappy) · Streaming Ingestion · Distributed Feature Analytics
+              ACORD XML Integration · Parquet Columnar Lake · Real-time Streaming · PySpark Feature Analytics
             </p>
           </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleIngestXmlFeeds}
+            className="flex items-center gap-1.5 rounded-lg border border-purple-800/70 bg-purple-950/40 px-3 py-1.5 text-xs font-medium text-purple-300 hover:bg-purple-900/50 transition"
+            title="Ingests ACORD XML partner feeds into DB and Data Lake"
+          >
+            <Database className="h-3.5 w-3.5" />
+            <span>Ingest XML Feed</span>
+          </button>
+
           <button
             onClick={handleIngestBenchmark}
             disabled={ingestingBenchmark}

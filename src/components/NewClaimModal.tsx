@@ -1,15 +1,44 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, CheckCircle, AlertCircle, Send, Car, Activity } from "lucide-react";
+import { X, CheckCircle, AlertCircle, Send, FileCode, Edit3, Sparkles } from "lucide-react";
 import { ClaimType } from "@/lib/domain/types";
+import { SAMPLE_ACORD_XML } from "@/lib/services/xml-parser-service";
 
 interface NewClaimModalProps {
   onClose: () => void;
   onClaimCreated: () => void;
 }
 
+const SAMPLE_HEALTH_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<InsuranceClaim xmlns="http://www.hl7.org/claim">
+  <TransactionId>XML-TX-HLTH-7721</TransactionId>
+  <PolicyRef>POL-HEALTH-301</PolicyRef>
+  <InsuredRef>CUST-HLTH-88</InsuredRef>
+  <LossType>HEALTH</LossType>
+  <LossDate>2026-03-24</LossDate>
+  <NoticeAt>2026-03-25</NoticeAt>
+  <TotalLossAmount>6400.00</TotalLossAmount>
+  <Currency>USD</Currency>
+  <LossNarrative>Emergency room admission following sudden acute trauma.</LossNarrative>
+  <FacilityId>HOSP-STDAVIDS-01</FacilityId>
+  <FacilityName>St. David's Medical Center</FacilityName>
+  <ProducerId>AGENT-AUSTIN-LIFE</ProducerId>
+  <ProducerName>Austin Life and Health Brokers</ProducerName>
+  <IncidentLocation>919 E 32nd St</IncidentLocation>
+  <IncidentCity>Austin</IncidentCity>
+  <IncidentState>TX</IncidentState>
+  <InsuredZip>78705</InsuredZip>
+  <HealthDetails>
+    <DiagnosisCodes>S13.4XXA, M54.2</DiagnosisCodes>
+    <ProcedureCodes>99284, 72040, 72125</ProcedureCodes>
+  </HealthDetails>
+</InsuranceClaim>`;
+
 export function NewClaimModal({ onClose, onClaimCreated }: NewClaimModalProps) {
+  const [activeTab, setActiveTab] = useState<"FORM" | "XML">("FORM");
+
+  // Form State
   const [claimType, setClaimType] = useState<ClaimType>("AUTO");
   const [policyId, setPolicyId] = useState("POL-AUTO-88219");
   const [customerId, setCustomerId] = useState("CUST-1001");
@@ -18,6 +47,9 @@ export function NewClaimModal({ onClose, onClaimCreated }: NewClaimModalProps) {
   const [description, setDescription] = useState("Front collision resulting in cracked bumper and radiator leak.");
   const [vin, setVin] = useState("1HGCR2F83HA019284");
   const [garageId, setGarageId] = useState("GAR-77401");
+
+  // XML State
+  const [xmlContent, setXmlContent] = useState<string>(SAMPLE_ACORD_XML);
 
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{
@@ -57,7 +89,7 @@ export function NewClaimModal({ onClose, onClaimCreated }: NewClaimModalProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setFeedback(null);
@@ -139,15 +171,54 @@ export function NewClaimModal({ onClose, onClaimCreated }: NewClaimModalProps) {
     }
   };
 
+  const handleXmlSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setFeedback(null);
+
+    try {
+      const res = await fetch("/api/claims/xml", {
+        method: "POST",
+        headers: { "Content-Type": "application/xml" },
+        body: xmlContent,
+      });
+
+      const json = await res.json();
+      if (res.ok && json.success) {
+        setFeedback({
+          success: true,
+          message: `ACORD XML integration succeeded! Ingested ${json.successful_ingestions} claim(s) into MongoDB, Neo4j, and Parquet Lake.`,
+        });
+        onClaimCreated();
+      } else {
+        const errorList = json.errors ? json.errors.map((e: { error: string }) => e.error) : [json.error];
+        setFeedback({
+          success: false,
+          message: json.error || "XML schema or business validation failure.",
+          errors: errorList,
+        });
+        onClaimCreated();
+      }
+    } catch (err) {
+      setFeedback({
+        success: false,
+        message: "Network error during XML integration",
+        errors: [String(err)],
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
       <div className="flex h-[90vh] w-full max-w-2xl flex-col rounded-2xl border border-zinc-800 bg-zinc-950 text-zinc-200 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
           <div>
-            <h2 className="text-base font-bold text-zinc-100">Ingest New Claim</h2>
+            <h2 className="text-base font-bold text-zinc-100">Ingest New Insurance Claim</h2>
             <p className="text-xs text-zinc-400">
-              Payload is evaluated live by the Multi-Tier Validation Engine
+              Evaluated live by Multi-Tier Validation Engine, MongoDB Store, & Neo4j Aura
             </p>
           </div>
           <button
@@ -158,183 +229,279 @@ export function NewClaimModal({ onClose, onClaimCreated }: NewClaimModalProps) {
           </button>
         </div>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {/* Preset Buttons for Quick Testing */}
-          <div>
-            <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-2">
-              Quick Test Presets (Seeded Master Records)
-            </label>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => handlePolicyPreset("VALID_AUTO_1")}
-                className="rounded-lg border border-emerald-800/80 bg-emerald-950/40 px-2.5 py-1 text-emerald-300 hover:bg-emerald-900/50"
-              >
-                ✓ Valid Auto (Elena / Apex Garage)
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePolicyPreset("VALID_AUTO_2")}
-                className="rounded-lg border border-emerald-800/80 bg-emerald-950/40 px-2.5 py-1 text-emerald-300 hover:bg-emerald-900/50"
-              >
-                ✓ Valid Auto (Marcus / Apex Garage)
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePolicyPreset("EXPIRED_POLICY")}
-                className="rounded-lg border border-rose-800/80 bg-rose-950/40 px-2.5 py-1 text-rose-300 hover:bg-rose-900/50"
-              >
-                ✗ Test Expired Policy Error
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePolicyPreset("VIN_MISMATCH")}
-                className="rounded-lg border border-amber-800/80 bg-amber-950/40 px-2.5 py-1 text-amber-300 hover:bg-amber-900/50"
-              >
-                ✗ Test VIN Mismatch Error
-              </button>
-            </div>
-          </div>
+        {/* Tab Toggle */}
+        <div className="flex border-b border-zinc-800 bg-zinc-900/50 px-6 pt-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("FORM")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition ${
+              activeTab === "FORM"
+                ? "border-emerald-500 text-emerald-400"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <Edit3 className="h-3.5 w-3.5" />
+            <span>Interactive Form</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("XML")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-xs font-semibold transition ${
+              activeTab === "XML"
+                ? "border-cyan-500 text-cyan-400"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            <FileCode className="h-3.5 w-3.5" />
+            <span>ACORD & Enterprise XML Ingest</span>
+          </button>
+        </div>
 
-          {/* Form Fields */}
-          <div className="grid grid-cols-2 gap-4">
+        {/* Tab 1: Form Body */}
+        {activeTab === "FORM" && (
+          <form onSubmit={handleFormSubmit} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             <div>
-              <label className="text-xs font-medium text-zinc-300 block mb-1">Claim Type</label>
-              <select
-                value={claimType}
-                onChange={(e) => setClaimType(e.target.value as ClaimType)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500"
-              >
-                <option value="AUTO">AUTO (Automobile Collision)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-zinc-300 block mb-1">Claimed Amount (USD)</label>
-              <input
-                type="number"
-                value={claimedAmount}
-                onChange={(e) => setClaimedAmount(Number(e.target.value))}
-                required
-                min={1}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-zinc-300 block mb-1">Policy ID</label>
-              <input
-                type="text"
-                value={policyId}
-                onChange={(e) => setPolicyId(e.target.value)}
-                required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-zinc-300 block mb-1">Customer ID</label>
-              <input
-                type="text"
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-zinc-300 block mb-1">Vehicle VIN</label>
-              <input
-                type="text"
-                value={vin}
-                onChange={(e) => setVin(e.target.value)}
-                required
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-zinc-300 block mb-1">Repair Facility / Garage ID</label>
-              <input
-                type="text"
-                value={garageId}
-                onChange={(e) => setGarageId(e.target.value)}
-                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-zinc-300 block mb-1">Incident Date & Time</label>
-            <input
-              type="datetime-local"
-              value={incidentDate}
-              onChange={(e) => setIncidentDate(e.target.value)}
-              required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium text-zinc-300 block mb-1">Incident Description</label>
-            <textarea
-              rows={2}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              required
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500"
-            />
-          </div>
-
-          {/* Feedback Area */}
-          {feedback && (
-            <div
-              className={`rounded-xl border p-4 ${
-                feedback.success
-                  ? "border-emerald-800/80 bg-emerald-950/40 text-emerald-200"
-                  : "border-rose-800/80 bg-rose-950/40 text-rose-200"
-              }`}
-            >
-              <div className="flex items-center gap-2 font-semibold text-xs">
-                {feedback.success ? (
-                  <CheckCircle className="h-4 w-4 text-emerald-400" />
-                ) : (
-                  <AlertCircle className="h-4 w-4 text-rose-400" />
-                )}
-                <span>{feedback.message}</span>
+              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block mb-2">
+                Quick Test Presets (Seeded Master Records)
+              </label>
+              <div className="flex flex-wrap gap-2 text-xs">
+                <button
+                  type="button"
+                  onClick={() => handlePolicyPreset("VALID_AUTO_1")}
+                  className="rounded-lg border border-emerald-800/80 bg-emerald-950/40 px-2.5 py-1 text-emerald-300 hover:bg-emerald-900/50"
+                >
+                  ✓ Valid Auto (Elena / Apex Garage)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePolicyPreset("VALID_AUTO_2")}
+                  className="rounded-lg border border-emerald-800/80 bg-emerald-950/40 px-2.5 py-1 text-emerald-300 hover:bg-emerald-900/50"
+                >
+                  ✓ Valid Auto (Marcus / Apex Garage)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePolicyPreset("EXPIRED_POLICY")}
+                  className="rounded-lg border border-rose-800/80 bg-rose-950/40 px-2.5 py-1 text-rose-300 hover:bg-rose-900/50"
+                >
+                  ✗ Test Expired Policy Error
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handlePolicyPreset("VIN_MISMATCH")}
+                  className="rounded-lg border border-amber-800/80 bg-amber-950/40 px-2.5 py-1 text-amber-300 hover:bg-amber-900/50"
+                >
+                  ✗ Test VIN Mismatch Error
+                </button>
               </div>
-              {feedback.errors && feedback.errors.length > 0 && (
-                <ul className="mt-2 space-y-1 text-xs font-mono text-rose-300">
-                  {feedback.errors.map((err, idx) => (
-                    <li key={idx}>• {err}</li>
-                  ))}
-                </ul>
-              )}
             </div>
-          )}
 
-          {/* Actions */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-zinc-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition"
-            >
-              <Send className="h-3.5 w-3.5" />
-              <span>{submitting ? "Processing..." : "Submit Claim for Ingestion"}</span>
-            </button>
-          </div>
-        </form>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1">Claim Type</label>
+                <select
+                  value={claimType}
+                  onChange={(e) => setClaimType(e.target.value as ClaimType)}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500"
+                >
+                  <option value="AUTO">AUTO (Automobile Collision)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1">Claimed Amount (USD)</label>
+                <input
+                  type="number"
+                  value={claimedAmount}
+                  onChange={(e) => setClaimedAmount(Number(e.target.value))}
+                  required
+                  min={1}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1">Policy ID</label>
+                <input
+                  type="text"
+                  value={policyId}
+                  onChange={(e) => setPolicyId(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1">Customer ID</label>
+                <input
+                  type="text"
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1">Vehicle VIN</label>
+                <input
+                  type="text"
+                  value={vin}
+                  onChange={(e) => setVin(e.target.value)}
+                  required
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium text-zinc-300 block mb-1">Repair Facility / Garage ID</label>
+                <input
+                  type="text"
+                  value={garageId}
+                  onChange={(e) => setGarageId(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500 font-mono"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-zinc-300 block mb-1">Incident Date & Time</label>
+              <input
+                type="datetime-local"
+                value={incidentDate}
+                onChange={(e) => setIncidentDate(e.target.value)}
+                required
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-zinc-300 block mb-1">Incident Description</label>
+              <textarea
+                rows={2}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                required
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+
+            {feedback && <FeedbackCard feedback={feedback} />}
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-500 disabled:opacity-50 transition"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>{submitting ? "Processing..." : "Submit Claim for Ingestion"}</span>
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Tab 2: ACORD & Enterprise XML Editor */}
+        {activeTab === "XML" && (
+          <form onSubmit={handleXmlSubmit} className="flex-1 flex flex-col justify-between overflow-y-auto px-6 py-4 space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider block">
+                  XML Feed Payload (ACORD / HL7 / Custom XML Schema)
+                </label>
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setXmlContent(SAMPLE_ACORD_XML)}
+                    className="flex items-center gap-1 rounded border border-cyan-800/80 bg-cyan-950/40 px-2 py-0.5 text-cyan-300 hover:bg-cyan-900/50"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    <span>Load ACORD Auto XML</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setXmlContent(SAMPLE_HEALTH_XML)}
+                    className="flex items-center gap-1 rounded border border-purple-800/80 bg-purple-950/40 px-2 py-0.5 text-purple-300 hover:bg-purple-900/50"
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    <span>Load Health XML</span>
+                  </button>
+                </div>
+              </div>
+
+              <textarea
+                rows={12}
+                value={xmlContent}
+                onChange={(e) => setXmlContent(e.target.value)}
+                required
+                className="w-full font-mono text-xs rounded-xl border border-zinc-700 bg-zinc-900/90 p-3 text-cyan-300 focus:outline-none focus:border-cyan-500 shadow-inner"
+              />
+              <p className="text-[11px] text-zinc-500 mt-1">
+                The XML Parser service normalizes XML trees into canonical domain schemas, extracts multi-party entities (garages, agents, hospitals), stages database records, and sinks to the Parquet Data Lake.
+              </p>
+            </div>
+
+            {feedback && <FeedbackCard feedback={feedback} />}
+
+            <div className="flex justify-end gap-3 pt-3 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700 transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submitting}
+                className="flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-xs font-semibold text-white hover:bg-cyan-500 disabled:opacity-50 transition shadow-sm"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>{submitting ? "Integrating XML..." : "Parse & Ingest XML"}</span>
+              </button>
+            </div>
+          </form>
+        )}
       </div>
+    </div>
+  );
+}
+
+function FeedbackCard({
+  feedback,
+}: {
+  feedback: { success: boolean; message: string; errors?: string[] };
+}) {
+  return (
+    <div
+      className={`rounded-xl border p-4 ${
+        feedback.success
+          ? "border-emerald-800/80 bg-emerald-950/40 text-emerald-200"
+          : "border-rose-800/80 bg-rose-950/40 text-rose-200"
+      }`}
+    >
+      <div className="flex items-center gap-2 font-semibold text-xs">
+        {feedback.success ? (
+          <CheckCircle className="h-4 w-4 text-emerald-400" />
+        ) : (
+          <AlertCircle className="h-4 w-4 text-rose-400" />
+        )}
+        <span>{feedback.message}</span>
+      </div>
+      {feedback.errors && feedback.errors.length > 0 && (
+        <ul className="mt-2 space-y-1 text-xs font-mono text-rose-300">
+          {feedback.errors.map((err, idx) => (
+            <li key={idx}>• {err}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

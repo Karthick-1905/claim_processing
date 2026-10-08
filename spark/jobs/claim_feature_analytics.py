@@ -9,7 +9,7 @@ and outputs feature vectors to Parquet and MongoDB.
 import os
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 # Project root paths
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -98,7 +98,7 @@ def run_spark_analytics():
 
     # Write Feature Store output to Parquet Data Lake
     os.makedirs(DATALAKE_FEATURES, exist_ok=True)
-    out_path = os.path.join(DATALAKE_FEATURES, f"run_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}")
+    out_path = os.path.join(DATALAKE_FEATURES, f"run_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}")
     print(f"Persisting enriched feature vectors to Parquet Data Lake: {out_path} ...")
     df_analyzed.write.mode("overwrite").parquet(out_path)
 
@@ -114,7 +114,7 @@ def run_spark_analytics():
 
     # Write summary
     summary = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "engine": "Apache Spark (PySpark)",
         "total_claims_processed": total_records,
         "investigation_candidates_identified": len(flagged_records),
@@ -202,7 +202,7 @@ def update_mongo_candidates(records):
         claims_col = db["claims"]
         events_col = db["claim_events"]
 
-        now_iso = datetime.utcnow().isoformat() + "Z"
+        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
         updated_count = 0
 
         for r in records:
@@ -234,7 +234,7 @@ def update_mongo_candidates(records):
                 if res.modified_count > 0:
                     updated_count += 1
                     events_col.insert_one({
-                        "event_id": f"EVT-SPARK-{datetime.utcnow().strftime('%s%f')}",
+                        "event_id": f"EVT-SPARK-{datetime.now(timezone.utc).strftime('%s%f')}",
                         "claim_id": claim_id,
                         "event_type": "INVESTIGATION_FLAGGED",
                         "from_status": "READY_FOR_ANALYSIS",

@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     const interval = typeof body.interval === "number" ? body.interval : 0.5;
 
     const venvName = [".", "v", "e", "n", "v"].join("");
-    const venvDir = process.env.VIRTUAL_ENV || path.join(process.cwd(), venvName);
+    const venvDir = process.env.VIRTUAL_ENV || path.join(/*turbopackIgnore: true*/ process.cwd(), venvName);
     const scriptPath = path.join(process.cwd(), "spark", "pipelines", "stream_generator.py");
 
     const spawnEnv = {

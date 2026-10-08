@@ -143,3 +143,45 @@ Validation failures do not discard data silently; they record structured error c
 | `ERR_ASSET_NOT_COVERED` | Referential | Vehicle VIN is not registered on the policy |
 | `ERR_EXCEEDS_COVERAGE` | Business Rule | `claimed_amount > policy.coverage_limit` |
 | `ERR_DUPLICATE_CLAIM` | Deduplication | Exact match on `(policy_id, incident_date, amount)` within 48h |
+
+---
+
+## 4. Enterprise XML Data Integration (ACORD & HL7 Standards)
+
+In enterprise insurance environments, partner networks, third-party administrators (TPAs), and hospitals transmit claim dossiers in XML interchange formats (such as the ACORD standard for Property & Casualty / Auto and HL7/custom schemas for Healthcare).
+
+### 4.1 ACORD Automobile XML Model
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<ACORDClaim xmlns="http://www.acord.org/standards/claims">
+  <TransactionId>TX-ACORD-2026-90812</TransactionId>
+  <PolicyRef>POL-AUTO-88219</PolicyRef>
+  <InsuredRef>CUST-1001</InsuredRef>
+  <LossType>AUTO</LossType>
+  <LossDate>2026-03-12</LossDate>
+  <NoticeAt>2026-03-13</NoticeAt>
+  <TotalLossAmount>14250.00</TotalLossAmount>
+  <Currency>USD</Currency>
+  <LossNarrative>Vehicle sustained major rear impact while stopped at intersection light.</LossNarrative>
+  <RepairFacilityId>GAR-77401</RepairFacilityId>
+  <RepairFacilityName>Apex Auto Collision</RepairFacilityName>
+  <ProducerId>AGT-3029</ProducerId>
+  <AutoDetails>
+    <Vin>1HGCR2F83HA019284</Vin>
+    <LicensePlate>TX-782-KKL</LicensePlate>
+    <Make>Honda</Make>
+    <Model>Accord Sport</Model>
+    <Year>2021</Year>
+    <RepairCost>14250.00</RepairCost>
+    <IsDrivable>false</IsDrivable>
+    <HasPoliceReport>true</HasPoliceReport>
+  </AutoDetails>
+</ACORDClaim>
+```
+
+### 4.2 Normalization & Extraction Pipeline
+1. **XML Parsing**: Ingested via Next.js `/api/claims/xml` or PySpark `spark/pipelines/ingest_xml_claims.py`.
+2. **Schema Mapping**: Canonicalizes XML nodes into `IngestClaimInput` domain schemas.
+3. **Graph Entity Projection**: Auto-extracts involved repair facilities, brokers, medical providers, and vehicles into the Neo4j knowledge graph.
+4. **Data Lake Storage**: Directly partitions valid claims into the Apache Parquet Data Lake (`datalake/raw/claims/year=YYYY/month=MM/day=DD/`).
+

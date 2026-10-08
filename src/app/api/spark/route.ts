@@ -32,7 +32,7 @@ export async function GET() {
 export async function POST() {
   try {
     const venvName = [".", "v", "e", "n", "v"].join("");
-    const venvDir = process.env.VIRTUAL_ENV || path.join(process.cwd(), venvName);
+    const venvDir = process.env.VIRTUAL_ENV || path.join(/*turbopackIgnore: true*/ process.cwd(), venvName);
     const scriptPath = path.join(process.cwd(), "spark", "jobs", "claim_feature_analytics.py");
 
     const execEnv = {

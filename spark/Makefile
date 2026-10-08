@@ -14,7 +14,7 @@ COUNT ?= 20
 INTERVAL ?= 0.5
 BENCH_COUNT ?= 100
 
-.PHONY: help setup stream stream-continuous ingest-benchmark analytics status clean-lake clean-pycache
+.PHONY: help setup stream stream-continuous ingest-benchmark ingest-xml analytics status clean-lake clean-pycache
 
 help:
 	@echo "======================================================================"
@@ -24,6 +24,7 @@ help:
 	@echo "  make stream             - Run streaming generator for a burst (default: COUNT=20 INTERVAL=0.5)"
 	@echo "  make stream-continuous  - Run real-time stream worker daemon continuously"
 	@echo "  make ingest-benchmark   - Ingest Kaggle/Mendeley real claims dataset (default: BENCH_COUNT=100)"
+	@echo "  make ingest-xml         - Ingest ACORD & Health XML feeds from data/xml_claims/"
 	@echo "  make analytics          - Execute PySpark feature engineering and anomaly detection job"
 	@echo "  make status             - Show streaming worker status and Parquet lake stats"
 	@echo "  make clean-lake         - Clean Parquet Data Lake (raw and analytics)"
@@ -53,6 +54,11 @@ ingest-benchmark:
 	@echo "Ingesting real benchmark claims dataset ($(BENCH_COUNT) claims)..."
 	@VIRTUAL_ENV=$(VENV) PATH=$(VENV)/bin:$$PATH \
 	python3 $(PROJECT_ROOT)/spark/pipelines/ingest_benchmark_dataset.py $(BENCH_COUNT)
+
+ingest-xml:
+	@echo "Ingesting ACORD and partner XML feeds from data/xml_claims/..."
+	@VIRTUAL_ENV=$(VENV) PATH=$(VENV)/bin:$$PATH \
+	python3 $(PROJECT_ROOT)/spark/pipelines/ingest_xml_claims.py
 
 analytics:
 	@echo "Executing PySpark Feature Engineering & Anomaly Analytics Job..."

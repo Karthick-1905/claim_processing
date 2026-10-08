@@ -111,7 +111,44 @@ curl -X POST http://localhost:3000/api/spark
 
 ---
 
-## 8. Static Code Intelligence with Fallow
+## 8. Enterprise XML Ingestion (ACORD & Health Feeds)
+
+Ingest enterprise partner XML feeds into MongoDB, Neo4j, and the Parquet Data Lake:
+
+```bash
+# Ingest all XML files in data/xml_claims/ via Makefile
+make -C spark ingest-xml
+
+# Or run via Python directly
+.venv/bin/python spark/pipelines/ingest_xml_claims.py
+
+# Or submit XML directly to the App Router API endpoint
+curl -X POST http://localhost:3000/api/claims/xml \
+  -H "Content-Type: application/xml" \
+  --data-binary @data/xml_claims/partner_auto_batch.xml
+```
+
+---
+
+## 9. PySpark & Big Data Pipeline Makefile
+
+A root `spark/Makefile` orchestrates all background tasks:
+
+```bash
+make -C spark help               # Display all available pipeline commands
+make -C spark setup              # Initialize .venv and install dependencies
+make -C spark stream             # Stream burst of 20 simulated claims
+make -C spark stream-continuous  # Start real-time stream daemon
+make -C spark ingest-benchmark   # Ingest real Kaggle/Mendeley dataset
+make -C spark ingest-xml         # Ingest ACORD & Health XML feeds
+make -C spark analytics          # Execute PySpark feature engineering job
+make -C spark status             # Inspect stream telemetry and lake stats
+make -C spark clean-lake         # Reset Parquet Data Lake
+```
+
+---
+
+## 10. Static Code Intelligence with Fallow
 
 Run the static analysis suite across all TypeScript, React, and server files to ensure clean code, zero dead code, zero dead exports, and high maintainability:
 
@@ -125,3 +162,4 @@ pnpm fallow dupes
 # Run health score check
 pnpm fallow --score
 ```
+
