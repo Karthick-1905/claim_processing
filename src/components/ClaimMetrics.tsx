@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FileText, CheckCircle, ShieldAlert, XCircle } from "lucide-react";
+import { FileText, CheckCircle2, ShieldAlert, AlertOctagon } from "lucide-react";
 
 interface ClaimMetricsProps {
   summary: {
@@ -19,60 +19,68 @@ export function ClaimMetrics({ summary }: ClaimMetricsProps) {
   const reviewCount = summary.underReview + summary.investigationCandidate;
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-      {/* Total Claims Card */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-sm">
+    <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+      {/* Total Ingested */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-zinc-400">Total Ingested</span>
-          <span className="rounded-md bg-zinc-800 p-1.5 text-zinc-400">
+          <span className="text-xs font-medium text-slate-500">Total Ingested</span>
+          <span className="rounded-xl bg-slate-100 p-2 text-slate-600">
             <FileText className="h-4 w-4" />
           </span>
         </div>
         <div className="mt-3">
-          <span className="text-2xl font-bold text-zinc-100">{summary.total}</span>
-          <p className="text-[11px] text-zinc-500 mt-0.5">Claims registered in MongoDB</p>
+          <span className="text-2xl font-bold font-mono tracking-tight text-slate-900">
+            {summary.total}
+          </span>
+          <p className="text-[11px] text-slate-500 mt-0.5">MongoDB operational records</p>
         </div>
       </div>
 
-      {/* Validated / Staged for Big Data */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-sm">
+      {/* Ready for Big Data Analysis */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-zinc-400">Ready for Analysis</span>
-          <span className="rounded-md bg-emerald-950/70 p-1.5 text-emerald-400 border border-emerald-900/50">
-            <CheckCircle className="h-4 w-4" />
+          <span className="text-xs font-medium text-slate-500">Validated & Staged</span>
+          <span className="rounded-xl bg-emerald-50 p-2 text-emerald-600 border border-emerald-100">
+            <CheckCircle2 className="h-4 w-4" />
           </span>
         </div>
         <div className="mt-3">
-          <span className="text-2xl font-bold text-emerald-400">{readyCount}</span>
-          <p className="text-[11px] text-zinc-500 mt-0.5">Normalized & staged for PySpark/Graph</p>
+          <span className="text-2xl font-bold font-mono tracking-tight text-emerald-700">
+            {readyCount}
+          </span>
+          <p className="text-[11px] text-slate-500 mt-0.5">Staged for PySpark / Graph</p>
         </div>
       </div>
 
       {/* Investigation Candidates */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-sm">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-zinc-400">Investigation Candidates</span>
-          <span className="rounded-md bg-amber-950/70 p-1.5 text-amber-400 border border-amber-900/50">
+          <span className="text-xs font-medium text-slate-500">Investigation Candidates</span>
+          <span className="rounded-xl bg-amber-50 p-2 text-amber-600 border border-amber-100">
             <ShieldAlert className="h-4 w-4" />
           </span>
         </div>
         <div className="mt-3">
-          <span className="text-2xl font-bold text-amber-400">{reviewCount}</span>
-          <p className="text-[11px] text-zinc-500 mt-0.5">Suspicious multi-party patterns flagged</p>
+          <span className="text-2xl font-bold font-mono tracking-tight text-amber-700">
+            {reviewCount}
+          </span>
+          <p className="text-[11px] text-slate-500 mt-0.5">Multi-party risk indicators</p>
         </div>
       </div>
 
-      {/* Invalid Records */}
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 shadow-sm">
+      {/* Validation Failures */}
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-zinc-400">Validation Failures</span>
-          <span className="rounded-md bg-rose-950/70 p-1.5 text-rose-400 border border-rose-900/50">
-            <XCircle className="h-4 w-4" />
+          <span className="text-xs font-medium text-slate-500">Validation Failures</span>
+          <span className="rounded-xl bg-rose-50 p-2 text-rose-600 border border-rose-100">
+            <AlertOctagon className="h-4 w-4" />
           </span>
         </div>
         <div className="mt-3">
-          <span className="text-2xl font-bold text-rose-400">{summary.invalid}</span>
-          <p className="text-[11px] text-zinc-500 mt-0.5">Trapped by Tier 1-3 validation rules</p>
+          <span className="text-2xl font-bold font-mono tracking-tight text-rose-700">
+            {summary.invalid}
+          </span>
+          <p className="text-[11px] text-slate-500 mt-0.5">Trapped by multi-tier rules</p>
         </div>
       </div>
     </div>

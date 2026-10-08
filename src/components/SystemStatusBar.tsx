@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Database, Network, RefreshCw, PlusCircle, CheckCircle2, AlertCircle } from "lucide-react";
+import { Database, Network, RefreshCw, Plus, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 
 interface SystemStatusBarProps {
   mongoStatus: "CONNECTED" | "ERROR" | "DISCONNECTED";
@@ -30,7 +30,7 @@ export function SystemStatusBar({
       const res = await fetch("/api/seed", { method: "POST" });
       const json = await res.json();
       if (json.success) {
-        setSeedNotice("Master data & seed claims initialized in MongoDB!");
+        setSeedNotice("Master policies and sample claims initialized successfully.");
         onDataMutated();
       } else {
         setSeedNotice(`Error: ${json.error}`);
@@ -44,95 +44,103 @@ export function SystemStatusBar({
   };
 
   return (
-    <header className="border-b border-zinc-800 bg-zinc-950 px-6 py-4">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold tracking-tight text-zinc-100">
-              Claim Processing & Fraud Investigation Platform
-            </h1>
-            <span className="rounded-full bg-cyan-950/80 px-2.5 py-0.5 text-xs font-semibold text-cyan-400 border border-cyan-800/60">
-              Phase 1 Foundation
-            </span>
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-6 py-3.5 shadow-[0_1px_3px_rgba(0,0,0,0.03)]">
+      <div className="max-w-7xl mx-auto flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Brand & Project Identity */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-white font-mono font-bold text-sm shadow-sm">
+            CN
           </div>
-          <p className="text-xs text-zinc-400 mt-1">
-            MongoDB Operational Store · Neo4j Aura Graph · Clean Data Pipeline
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-base font-semibold tracking-tight text-slate-900">
+                ClaimNexus
+              </h1>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 border border-slate-200">
+                Big Data & Graph Engine
+              </span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Insurance Ingestion · Parquet Lake · Neo4j Aura · PySpark Analytics
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* MongoDB Status Badge */}
-          <div className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/90 px-3 py-1.5 text-xs">
-            <Database className="h-4 w-4 text-emerald-400" />
-            <div className="flex flex-col">
-              <span className="font-semibold text-zinc-200">
-                MongoDB:{" "}
-                <span
-                  className={
-                    mongoStatus === "CONNECTED"
-                      ? "text-emerald-400"
-                      : "text-rose-400"
-                  }
-                >
-                  {mongoStatus}
-                </span>
-              </span>
-              <span className="text-[10px] text-zinc-400">
-                {mongoCounts.claims} claims · {mongoCounts.policies} policies · {mongoCounts.customers} cust
+        {/* Status Indicators & Action Controls */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* MongoDB Status */}
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-1.5 text-xs text-slate-700">
+            <span className="relative flex h-2 w-2">
+              <span
+                className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  mongoStatus === "CONNECTED" ? "bg-emerald-400" : "bg-rose-400"
+                }`}
+              />
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  mongoStatus === "CONNECTED" ? "bg-emerald-500" : "bg-rose-500"
+                }`}
+              />
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Database className="h-3.5 w-3.5 text-slate-500" />
+              <span className="font-medium text-slate-800">Mongo:</span>
+              <span className="font-mono text-slate-600 font-semibold">{mongoCounts.claims}</span>
+              <span className="text-slate-400 text-[11px]">claims</span>
+            </div>
+          </div>
+
+          {/* Neo4j Aura Status */}
+          <div className="flex items-center gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-3 py-1.5 text-xs text-slate-700">
+            <span className="relative flex h-2 w-2">
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  neo4jStatus === "CONNECTED" ? "bg-teal-500" : "bg-amber-500"
+                }`}
+              />
+            </span>
+            <div className="flex items-center gap-1.5">
+              <Network className="h-3.5 w-3.5 text-slate-500" />
+              <span className="font-medium text-slate-800">Neo4j Aura:</span>
+              <span
+                className={`text-[11px] font-medium truncate max-w-[120px] ${
+                  neo4jStatus === "CONNECTED" ? "text-teal-700" : "text-amber-700"
+                }`}
+                title={neo4jMessage}
+              >
+                {neo4jStatus === "CONNECTED" ? "Connected" : "Notice"}
               </span>
             </div>
           </div>
 
-          {/* Neo4j Aura Status Badge */}
-          <div className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/90 px-3 py-1.5 text-xs">
-            <Network className="h-4 w-4 text-cyan-400" />
-            <div className="flex flex-col">
-              <span className="font-semibold text-zinc-200">
-                Neo4j Aura:{" "}
-                <span
-                  className={
-                    neo4jStatus === "CONNECTED"
-                      ? "text-cyan-400"
-                      : "text-amber-400"
-                  }
-                >
-                  {neo4jStatus}
-                </span>
-              </span>
-              <span className="text-[10px] text-zinc-400 truncate max-w-[170px]" title={neo4jMessage}>
-                {neo4jMessage}
-              </span>
-            </div>
-          </div>
-
-          {/* Seed Master Data Button */}
+          {/* Seed Master Data Action */}
           <button
             onClick={handleSeed}
             disabled={seeding}
-            className="flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-xs font-medium text-zinc-200 hover:bg-zinc-700 hover:text-white transition disabled:opacity-50"
-            title="Seed verified policies, customers, and claims into MongoDB"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition shadow-xs disabled:opacity-50"
+            title="Initialize master customers, policies, and repair centers"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${seeding ? "animate-spin text-cyan-400" : ""}`} />
-            <span>{seeding ? "Seeding..." : "Seed Master Data"}</span>
+            <RefreshCw className={`h-3.5 w-3.5 text-slate-500 ${seeding ? "animate-spin text-slate-800" : ""}`} />
+            <span>{seeding ? "Seeding..." : "Seed Data"}</span>
           </button>
 
-          {/* New Claim Button */}
+          {/* New Claim CTA */}
           <button
             onClick={onNewClaimClick}
-            className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-emerald-500 shadow-sm transition"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-slate-800 transition shadow-sm active:scale-[0.98]"
           >
-            <PlusCircle className="h-3.5 w-3.5" />
-            <span>Ingest Claim</span>
+            <Plus className="h-3.5 w-3.5" />
+            <span>New Claim</span>
           </button>
         </div>
       </div>
 
       {seedNotice && (
-        <div className="mt-3 flex items-center gap-2 rounded-md bg-zinc-900 px-3 py-1.5 text-xs text-zinc-300 border border-zinc-700">
+        <div className="max-w-7xl mx-auto mt-2.5 flex items-center gap-2 rounded-xl bg-slate-50 px-3.5 py-2 text-xs text-slate-700 border border-slate-200 animate-in fade-in duration-200">
           {seedNotice.startsWith("Error") ? (
-            <AlertCircle className="h-4 w-4 text-rose-400 shrink-0" />
+            <AlertCircle className="h-4 w-4 text-rose-500 shrink-0" />
           ) : (
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
           )}
           <span>{seedNotice}</span>
         </div>

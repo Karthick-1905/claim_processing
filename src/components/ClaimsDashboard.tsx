@@ -47,7 +47,7 @@ export function ClaimsDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50/60 text-slate-900 flex flex-col font-sans antialiased selection:bg-slate-900 selection:text-white">
       {/* System Status Navigation Bar */}
       <SystemStatusBar
         mongoStatus={initialMongoStatus}
@@ -59,7 +59,7 @@ export function ClaimsDashboard({
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-6 sm:px-6 space-y-5">
         {/* KPI Metrics */}
         <ClaimMetrics summary={summary} />
 
@@ -68,12 +68,12 @@ export function ClaimsDashboard({
 
         {/* Claims Table View */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
-              Operational Claim Ingestion & Staging Pipeline
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+              Operational Pipeline & Claims Ledger
             </h2>
-            <span className="text-xs text-zinc-500">
-              Showing {claims.length} claims directly from MongoDB
+            <span className="text-xs text-slate-400 font-mono">
+              {claims.length} records in MongoDB
             </span>
           </div>
 

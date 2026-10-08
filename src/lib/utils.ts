@@ -15,7 +15,6 @@ export function formatDateTime(isoString: string): string {
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
     });
   } catch {
     return isoString;
@@ -26,26 +25,26 @@ export function getStatusBadgeClass(status: string): string {
   switch (status) {
     case "READY_FOR_ANALYSIS":
     case "VALIDATED":
-      return "bg-emerald-950/80 text-emerald-400 border-emerald-800/80";
+      return "bg-emerald-50 text-emerald-700 border-emerald-200/80";
     case "INVALID":
-      return "bg-rose-950/80 text-rose-400 border-rose-800/80";
+      return "bg-rose-50 text-rose-700 border-rose-200/80";
     case "UNDER_REVIEW":
     case "INVESTIGATION_CANDIDATE":
-      return "bg-amber-950/80 text-amber-400 border-amber-800/80";
+      return "bg-amber-50 text-amber-800 border-amber-200/80";
     default:
-      return "bg-zinc-800 text-zinc-300 border-zinc-700";
+      return "bg-slate-100 text-slate-700 border-slate-200";
   }
 }
 
 export function getGraphBadgeClass(status: string): string {
   switch (status) {
     case "SYNCED":
-      return "text-cyan-400";
+      return "text-teal-600 bg-teal-50 border-teal-200";
     case "PENDING":
-      return "text-amber-400";
+      return "text-amber-600 bg-amber-50 border-amber-200";
     case "FAILED":
-      return "text-rose-400";
+      return "text-rose-600 bg-rose-50 border-rose-200";
     default:
-      return "text-zinc-500";
+      return "text-slate-500 bg-slate-50 border-slate-200";
   }
 }
