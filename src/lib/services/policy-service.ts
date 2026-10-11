@@ -72,10 +72,12 @@ export async function validatePolicyCoverage(params: {
 
 export async function getAllPolicies(): Promise<Policy[]> {
   const db = await getDatabase();
-  return db.collection<Policy>("policies").find({}).toArray();
+  const docs = await db.collection<Policy>("policies").find({}).toArray();
+  return JSON.parse(JSON.stringify(docs));
 }
 
 export async function getAllCustomers(): Promise<Customer[]> {
   const db = await getDatabase();
-  return db.collection<Customer>("customers").find({}).toArray();
+  const docs = await db.collection<Customer>("customers").find({}).toArray();
+  return JSON.parse(JSON.stringify(docs));
 }

@@ -30,9 +30,10 @@ export async function emitClaimEvent(params: {
 
 export async function getEventsForClaim(claimId: string): Promise<ClaimEvent[]> {
   const db = await getDatabase();
-  return db
+  const docs = await db
     .collection<ClaimEvent>("claim_events")
     .find({ claim_id: claimId })
     .sort({ timestamp: 1 })
     .toArray();
+  return JSON.parse(JSON.stringify(docs));
 }

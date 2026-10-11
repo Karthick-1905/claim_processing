@@ -38,8 +38,8 @@ export default async function HomePage() {
       policies: pCount,
       customers: custCount,
     };
-    claims = claimsList;
-    summary = sum;
+    claims = JSON.parse(JSON.stringify(claimsList));
+    summary = JSON.parse(JSON.stringify(sum));
   } catch (err) {
     console.error("[HomePage] Error connecting to MongoDB:", err);
     mongoStatus = "ERROR";

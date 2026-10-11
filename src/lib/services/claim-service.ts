@@ -33,10 +33,11 @@ export async function ingestClaim(rawInput: unknown): Promise<ClaimIngestionResu
   if (input.idempotency_key) {
     const existing = await db.collection<Claim>("claims").findOne({ idempotency_key: input.idempotency_key });
     if (existing) {
+      const plainExisting: Claim = JSON.parse(JSON.stringify(existing));
       return {
-        success: existing.status !== "INVALID",
-        claim: existing,
-        validation_errors: existing.validation_errors || [],
+        success: plainExisting.status !== "INVALID",
+        claim: plainExisting,
+        validation_errors: plainExisting.validation_errors || [],
         message: "Claim request recognized from existing idempotency token.",
       };
     }
@@ -341,17 +342,21 @@ export async function getClaims(filter: {
   }
 
   const limit = filter.limit || 50;
-  return db
+  const docs = await db
     .collection<Claim>("claims")
     .find(query)
     .sort({ created_at: -1 })
     .limit(limit)
     .toArray();
+
+  return JSON.parse(JSON.stringify(docs));
 }
 
 export async function getClaimById(claimId: string): Promise<Claim | null> {
   const db = await getDatabase();
-  return db.collection<Claim>("claims").findOne({ claim_id: claimId });
+  const doc = await db.collection<Claim>("claims").findOne({ claim_id: claimId });
+  if (!doc) return null;
+  return JSON.parse(JSON.stringify(doc));
 }
 
 export async function getClaimsSummary(): Promise<{
