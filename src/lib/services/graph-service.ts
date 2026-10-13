@@ -55,12 +55,12 @@ export interface FraudGroup {
       stepNumber: number;
       name: string;
       description: string;
-      engine: "PySpark" | "Neo4j Graph" | "Validation Engine";
+      engine: "Statistical Engine" | "Neo4j Graph" | "Validation Engine";
       queryOrFormula?: string;
-      pysparkEquation?: string;
+      formula?: string;
     }>;
     cypherQuery: string;
-    pysparkEquation?: string;
+    formula?: string;
   };
   nodeIds: string[];
 }
@@ -154,15 +154,15 @@ export async function getFraudGraphData(selectedClusterId?: string): Promise<Gra
       detectionMethodology: {
         title: "Bipartite Co-Occurrence & Statistical Z-Score Anomaly",
         summary:
-          "Discovered by cross-referencing PySpark rolling window co-occurrence counts with Neo4j bipartite star topology.",
+          "Discovered by cross-referencing statistical rolling window co-occurrence counts with Neo4j bipartite star topology.",
         steps: [
           {
             stepNumber: 1,
-            name: "PySpark Bipartite Frequency Aggregation",
+            name: "Bipartite Frequency Aggregation",
             description:
-              "Distributed Spark aggregation computed the frequency of (Garage, Agent) pairs across all regional auto claims. Baseline expectation is 1.2 claims/pair. The pair (GAR-77401, AGT-3029) registered 13 claims (29.4 standard deviations above mean).",
-            engine: "PySpark",
-            pysparkEquation: "Z_pair = (Count(garage, agent) - μ) / σ = (13 - 1.2) / 0.4 = 29.5",
+              "Statistical aggregation computed the frequency of (Garage, Agent) pairs across all regional auto claims. Baseline expectation is 1.2 claims/pair. The pair (GAR-77401, AGT-3029) registered 13 claims (29.4 standard deviations above mean).",
+            engine: "Statistical Engine",
+            formula: "Z_pair = (Count(garage, agent) - μ) / σ = (13 - 1.2) / 0.4 = 29.5",
           },
           {
             stepNumber: 2,
@@ -177,9 +177,9 @@ export async function getFraudGraphData(selectedClusterId?: string): Promise<Gra
             stepNumber: 3,
             name: "Distributed Cost Anomaly Detection",
             description:
-              "PySpark computed the rolling mean repair cost per garage ($5,200). Apex claims submitted average $9,800, tripping the Z-score cost anomaly threshold.",
-            engine: "PySpark",
-            pysparkEquation: "Z_amount = (ClaimAmount - AvgGarageCost) / StdDevCost >= 2.0",
+              "Statistical profiler computed the rolling mean repair cost per garage ($5,200). Apex claims submitted average $9,800, tripping the Z-score cost anomaly threshold.",
+            engine: "Statistical Engine",
+            formula: "Z_amount = (ClaimAmount - AvgGarageCost) / StdDevCost >= 2.0",
           },
         ],
         cypherQuery: `MATCH (c:Customer)-[:FILED]->(cl:Claim)-[:REPAIRED_AT]->(g:Garage {id: 'GAR-77401'})
@@ -233,9 +233,9 @@ RETURN c, cl, g, a LIMIT 25;`,
             stepNumber: 1,
             name: "Temporal Asset Velocity Window",
             description:
-              "PySpark streaming window evaluated unique claims per asset identifier within 30-day buckets. VIN 1HGCR2F83HA019284 logged 11 claims, and VIN 4T1B11HK5JU109482 logged 16 claims (Normal velocity <= 1 claim/year).",
-            engine: "PySpark",
-            pysparkEquation: "Velocity(VIN, 30d) = Count(Claims(VIN)) >= 3",
+              "Streaming time-bucket window evaluated unique claims per asset identifier within 30-day buckets. VIN 1HGCR2F83HA019284 logged 11 claims, and VIN 4T1B11HK5JU109482 logged 16 claims (Normal velocity <= 1 claim/year).",
+            engine: "Statistical Engine",
+            formula: "Velocity(VIN, 30d) = Count(Claims(VIN)) >= 3",
           },
           {
             stepNumber: 2,

@@ -998,10 +998,10 @@ export function FraudGraphExplorer({ onSelectClaim }: FraudGraphExplorerProps) {
                 <h4 className="text-sm font-bold text-slate-900">{step.name}</h4>
                 <p className="text-xs text-slate-600 leading-relaxed">{step.description}</p>
 
-                {step.pysparkEquation && (
+                {step.formula && (
                   <div className="rounded-lg bg-white border border-slate-200 p-2 font-mono text-[10px] text-slate-800">
                     <span className="text-slate-400 block text-[9px] uppercase">Formula / Metric:</span>
-                    {step.pysparkEquation}
+                    {step.formula}
                   </div>
                 )}
               </div>

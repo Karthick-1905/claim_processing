@@ -93,7 +93,6 @@ export async function ingestClaim(rawInput: unknown): Promise<ClaimIngestionResu
     claim_details: input.claim_details,
     validation_errors: temporalErrors,
     graph_sync_status: "PENDING",
-    pyspark_batch_watermark: null,
     created_at: nowIso,
     updated_at: nowIso,
   };
@@ -214,7 +213,7 @@ export async function ingestClaim(rawInput: unknown): Promise<ClaimIngestionResu
     details: {
       location_geocoded: Boolean(input.location?.coordinates),
       normalized: true,
-      ready_for_pyspark: true,
+      ready_for_analysis: true,
     },
   });
 

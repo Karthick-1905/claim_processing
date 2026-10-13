@@ -48,7 +48,7 @@ export function ClaimMetrics({ summary }: ClaimMetricsProps) {
           <span className="text-2xl font-bold font-mono tracking-tight text-emerald-700">
             {readyCount}
           </span>
-          <p className="text-[11px] text-slate-500 mt-0.5">Staged for PySpark / Graph</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Staged for Graph / Analytics</p>
         </div>
       </div>
 

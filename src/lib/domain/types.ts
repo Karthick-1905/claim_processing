@@ -98,7 +98,6 @@ export interface Claim {
   validation_errors?: string[];
   risk_indicators?: string[];
   graph_sync_status: GraphSyncStatus;
-  pyspark_batch_watermark?: string | null;
   created_at: string;
   updated_at: string;
 }
