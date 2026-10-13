@@ -7,16 +7,14 @@ interface ClaimMetricsProps {
   summary: {
     total: number;
     validated: number;
-    readyForAnalysis: number;
-    underReview: number;
-    investigationCandidate: number;
+    flagged?: number;
+    underReview?: number;
     invalid: number;
   };
 }
 
 export function ClaimMetrics({ summary }: ClaimMetricsProps) {
-  const readyCount = summary.validated + summary.readyForAnalysis;
-  const reviewCount = summary.underReview + summary.investigationCandidate;
+  const flaggedCount = summary.flagged !== undefined ? summary.flagged : (summary.underReview || 0);
 
   return (
     <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
@@ -36,35 +34,35 @@ export function ClaimMetrics({ summary }: ClaimMetricsProps) {
         </div>
       </div>
 
-      {/* Ready for Big Data Analysis */}
+      {/* Validated Claims */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-500">Validated & Staged</span>
+          <span className="text-xs font-medium text-slate-500">Validated Clean</span>
           <span className="rounded-xl bg-emerald-50 p-2 text-emerald-600 border border-emerald-100">
             <CheckCircle2 className="h-4 w-4" />
           </span>
         </div>
         <div className="mt-3">
           <span className="text-2xl font-bold font-mono tracking-tight text-emerald-700">
-            {readyCount}
+            {summary.validated}
           </span>
-          <p className="text-[11px] text-slate-500 mt-0.5">Staged for Graph / Analytics</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Passed all policy checks</p>
         </div>
       </div>
 
-      {/* Investigation Candidates */}
+      {/* Flagged Collusion Rings */}
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-slate-500">Investigation Candidates</span>
-          <span className="rounded-xl bg-amber-50 p-2 text-amber-600 border border-amber-100">
+          <span className="text-xs font-medium text-slate-500">Flagged Fraud Rings</span>
+          <span className="rounded-xl bg-rose-50 p-2 text-rose-600 border border-rose-100">
             <ShieldAlert className="h-4 w-4" />
           </span>
         </div>
         <div className="mt-3">
-          <span className="text-2xl font-bold font-mono tracking-tight text-amber-700">
-            {reviewCount}
+          <span className="text-2xl font-bold font-mono tracking-tight text-rose-700">
+            {flaggedCount}
           </span>
-          <p className="text-[11px] text-slate-500 mt-0.5">Multi-party risk indicators</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Multi-party collusion candidates</p>
         </div>
       </div>
 
@@ -72,15 +70,15 @@ export function ClaimMetrics({ summary }: ClaimMetricsProps) {
       <div className="rounded-2xl border border-slate-200/80 bg-white p-4.5 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300">
         <div className="flex items-center justify-between">
           <span className="text-xs font-medium text-slate-500">Validation Failures</span>
-          <span className="rounded-xl bg-rose-50 p-2 text-rose-600 border border-rose-100">
+          <span className="rounded-xl bg-slate-100 p-2 text-slate-600 border border-slate-200">
             <AlertOctagon className="h-4 w-4" />
           </span>
         </div>
         <div className="mt-3">
-          <span className="text-2xl font-bold font-mono tracking-tight text-rose-700">
+          <span className="text-2xl font-bold font-mono tracking-tight text-slate-700">
             {summary.invalid}
           </span>
-          <p className="text-[11px] text-slate-500 mt-0.5">Trapped by multi-tier rules</p>
+          <p className="text-[11px] text-slate-500 mt-0.5">Trapped by temporal & limit rules</p>
         </div>
       </div>
     </div>

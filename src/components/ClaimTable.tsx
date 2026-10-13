@@ -61,11 +61,10 @@ export function ClaimTable({
             className="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-700 focus:outline-none focus:border-slate-400"
           >
             <option value="ALL">All Statuses</option>
-            <option value="READY_FOR_ANALYSIS">Ready for Analysis</option>
-            <option value="VALIDATED">Validated</option>
-            <option value="INVALID">Invalid</option>
-            <option value="UNDER_REVIEW">Under Review</option>
-            <option value="INVESTIGATION_CANDIDATE">Investigation Candidate</option>
+            <option value="VALIDATED">Validated Clean</option>
+            <option value="FLAGGED">Flagged Fraud</option>
+            <option value="INVALID">Validation Failure</option>
+            <option value="RECEIVED">Received</option>
           </select>
 
           {/* Type Filter */}

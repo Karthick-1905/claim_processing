@@ -1,4 +1,4 @@
-import { getDatabase } from "@/lib/db/mongodb";
+import { connectMongoose, ClaimModel } from "@/lib/models";
 import { getNeo4jDriver, getNeo4jConfig } from "@/lib/db/neo4j";
 import { Claim } from "@/lib/domain/types";
 
@@ -78,8 +78,8 @@ export interface GraphDataResponse {
 }
 
 export async function getFraudGraphData(selectedClusterId?: string): Promise<GraphDataResponse> {
-  const db = await getDatabase();
-  const rawClaims = await db.collection<Claim>("claims").find({}).toArray();
+  await connectMongoose();
+  const rawClaims = await ClaimModel.find({}).lean();
   const claims: Claim[] = JSON.parse(JSON.stringify(rawClaims));
 
   // Build node and link registries
@@ -332,7 +332,7 @@ RETURN cl, g, a;`,
 
     // 1. Customer Node
     const customerId = claim.customer_id;
-    const isCustomerFraud = isApex || isVinRing || isProviderRing || claim.status === "INVESTIGATION_CANDIDATE";
+    const isCustomerFraud = isApex || isVinRing || isProviderRing || claim.status === "FLAGGED";
     addNode({
       id: customerId,
       type: "CUSTOMER",
@@ -349,7 +349,7 @@ RETURN cl, g, a;`,
     });
 
     // 2. Claim Node
-    const isCandidate = claim.status === "INVESTIGATION_CANDIDATE" || Boolean(assignedCluster);
+    const isCandidate = claim.status === "FLAGGED" || Boolean(assignedCluster);
     addNode({
       id: claim.claim_id,
       type: "CLAIM",

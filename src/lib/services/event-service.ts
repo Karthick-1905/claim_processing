@@ -1,4 +1,4 @@
-import { getDatabase } from "@/lib/db/mongodb";
+import { connectMongoose, ClaimEventModel } from "@/lib/models";
 import { ClaimEvent, EventType, ClaimStatus } from "@/lib/domain/types";
 import { randomUUID } from "crypto";
 
@@ -11,8 +11,8 @@ export async function emitClaimEvent(params: {
   actor?: string;
   details?: Record<string, unknown>;
 }): Promise<ClaimEvent> {
-  const db = await getDatabase();
-  const event: ClaimEvent = {
+  await connectMongoose();
+  const eventData = {
     event_id: `EVT-${randomUUID()}`,
     claim_id: params.claim_id,
     event_type: params.event_type,
@@ -24,16 +24,12 @@ export async function emitClaimEvent(params: {
     details: params.details || {},
   };
 
-  await db.collection<ClaimEvent>("claim_events").insertOne(event);
-  return event;
+  const doc = await ClaimEventModel.create(eventData);
+  return JSON.parse(JSON.stringify(doc));
 }
 
 export async function getEventsForClaim(claimId: string): Promise<ClaimEvent[]> {
-  const db = await getDatabase();
-  const docs = await db
-    .collection<ClaimEvent>("claim_events")
-    .find({ claim_id: claimId })
-    .sort({ timestamp: 1 })
-    .toArray();
+  await connectMongoose();
+  const docs = await ClaimEventModel.find({ claim_id: claimId }).sort({ timestamp: 1 }).lean();
   return JSON.parse(JSON.stringify(docs));
 }

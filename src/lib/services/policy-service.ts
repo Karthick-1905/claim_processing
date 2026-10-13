@@ -1,4 +1,4 @@
-import { getDatabase } from "@/lib/db/mongodb";
+import { connectMongoose, PolicyModel, CustomerModel } from "@/lib/models";
 import { Policy, Customer } from "@/lib/domain/types";
 
 export interface ValidationCheckResult {
@@ -15,20 +15,25 @@ export async function validatePolicyCoverage(params: {
   claimed_amount: number;
   asset_identifier?: string;
 }): Promise<ValidationCheckResult> {
-  const db = await getDatabase();
+  await connectMongoose();
   const errors: string[] = [];
 
-  const policy = await db.collection<Policy>("policies").findOne({ policy_id: params.policy_id });
-  if (!policy) {
+  const policyDoc = await PolicyModel.findOne({ policy_id: params.policy_id }).lean();
+  if (!policyDoc) {
     errors.push(`ERR_POLICY_NOT_FOUND: Policy '${params.policy_id}' does not exist in master records.`);
     return { isValid: false, errors };
   }
+  const policy: Policy = JSON.parse(JSON.stringify(policyDoc));
 
-  const customer = await db.collection<Customer>("customers").findOne({ customer_id: params.customer_id });
-  if (!customer) {
+  const customerDoc = await CustomerModel.findOne({ customer_id: params.customer_id }).lean();
+  let customer: Customer | undefined;
+  if (!customerDoc) {
     errors.push(`ERR_CUSTOMER_NOT_FOUND: Customer '${params.customer_id}' does not exist.`);
-  } else if (policy.customer_id !== params.customer_id) {
-    errors.push(`ERR_CUSTOMER_MISMATCH: Customer '${params.customer_id}' is not the authorized holder of policy '${params.policy_id}'.`);
+  } else {
+    customer = JSON.parse(JSON.stringify(customerDoc));
+    if (policy.customer_id !== params.customer_id) {
+      errors.push(`ERR_CUSTOMER_MISMATCH: Customer '${params.customer_id}' is not the authorized holder of policy '${params.policy_id}'.`);
+    }
   }
 
   if (policy.status !== "ACTIVE") {
@@ -66,18 +71,18 @@ export async function validatePolicyCoverage(params: {
     isValid: errors.length === 0,
     errors,
     policy,
-    customer: customer || undefined,
+    customer,
   };
 }
 
 export async function getAllPolicies(): Promise<Policy[]> {
-  const db = await getDatabase();
-  const docs = await db.collection<Policy>("policies").find({}).toArray();
+  await connectMongoose();
+  const docs = await PolicyModel.find({}).lean();
   return JSON.parse(JSON.stringify(docs));
 }
 
 export async function getAllCustomers(): Promise<Customer[]> {
-  const db = await getDatabase();
-  const docs = await db.collection<Customer>("customers").find({}).toArray();
+  await connectMongoose();
+  const docs = await CustomerModel.find({}).lean();
   return JSON.parse(JSON.stringify(docs));
 }

@@ -2,16 +2,9 @@ export type ClaimType = "AUTO" | "HEALTH" | "PROPERTY";
 
 export type ClaimStatus =
   | "RECEIVED"
-  | "VALIDATING"
-  | "INVALID"
   | "VALIDATED"
-  | "ENRICHING"
-  | "READY_FOR_ANALYSIS"
-  | "UNDER_REVIEW"
-  | "INVESTIGATION_CANDIDATE"
-  | "APPROVED"
-  | "REJECTED"
-  | "SETTLED";
+  | "FLAGGED"
+  | "INVALID";
 
 export type PolicyType = "AUTO" | "HEALTH" | "PROPERTY";
 export type PolicyStatus = "ACTIVE" | "LAPSED" | "CANCELLED" | "EXPIRED";
@@ -25,7 +18,7 @@ export interface Address {
   city: string;
   state: string;
   postal_code: string;
-  coordinates?: [number, number]; // [longitude, latitude]
+  coordinates?: [number, number];
 }
 
 export interface EntityReference {
@@ -147,13 +140,9 @@ export interface ServiceProvider {
 
 export type EventType =
   | "CLAIM_RECEIVED"
-  | "VALIDATION_ATTEMPT"
-  | "VALIDATION_SUCCEEDED"
+  | "VALIDATION_PASSED"
   | "VALIDATION_FAILED"
-  | "LIFECYCLE_TRANSITION"
-  | "ENRICHMENT_COMPLETED"
-  | "GRAPH_PROJECTED"
-  | "INVESTIGATION_FLAGGED";
+  | "FRAUD_FLAGGED";
 
 export interface ClaimEvent {
   _id?: string;

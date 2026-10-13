@@ -23,14 +23,13 @@ export function formatDateTime(isoString: string): string {
 
 export function getStatusBadgeClass(status: string): string {
   switch (status) {
-    case "READY_FOR_ANALYSIS":
     case "VALIDATED":
       return "bg-emerald-50 text-emerald-700 border-emerald-200/80";
-    case "INVALID":
+    case "FLAGGED":
       return "bg-rose-50 text-rose-700 border-rose-200/80";
-    case "UNDER_REVIEW":
-    case "INVESTIGATION_CANDIDATE":
-      return "bg-amber-50 text-amber-800 border-amber-200/80";
+    case "INVALID":
+      return "bg-slate-100 text-slate-700 border-slate-300";
+    case "RECEIVED":
     default:
       return "bg-slate-100 text-slate-700 border-slate-200";
   }

@@ -1,4 +1,11 @@
-import { getDatabase, ensureIndexes } from "@/lib/db/mongodb";
+import {
+  connectMongoose,
+  CustomerModel,
+  PolicyModel,
+  ServiceProviderModel,
+  ClaimModel,
+  ClaimEventModel,
+} from "@/lib/models";
 import { Customer, Policy, ServiceProvider, Claim, ClaimEvent } from "@/lib/domain/types";
 
 export async function seedDatabase(): Promise<{
@@ -8,20 +15,20 @@ export async function seedDatabase(): Promise<{
   claimsCount: number;
   eventsCount: number;
 }> {
-  await ensureIndexes();
-  const db = await getDatabase();
+  await connectMongoose();
 
-  // Clear existing collections
-  await db.collection("customers").deleteMany({});
-  await db.collection("policies").deleteMany({});
-  await db.collection("service_providers").deleteMany({});
-  await db.collection("claims").deleteMany({});
-  await db.collection("claim_events").deleteMany({});
+  // Clear existing collections via Mongoose models
+  await CustomerModel.deleteMany({});
+  await PolicyModel.deleteMany({});
+  await ServiceProviderModel.deleteMany({});
+  await ClaimModel.deleteMany({});
+  await ClaimEventModel.deleteMany({});
 
   const now = new Date();
   const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString();
   const oneYearAhead = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString();
   const expiredDate = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
+  const d = (daysAgo: number) => new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
 
   // 1. Comprehensive Master Customers
   const customers: Customer[] = [
@@ -98,7 +105,7 @@ export async function seedDatabase(): Promise<{
       created_at: oneYearAgo,
     },
   ];
-  await db.collection<Customer>("customers").insertMany(customers);
+  await CustomerModel.insertMany(customers);
 
   // 2. Comprehensive Master Policies
   const policies: Policy[] = [
@@ -229,7 +236,7 @@ export async function seedDatabase(): Promise<{
       created_at: oneYearAgo,
     },
   ];
-  await db.collection<Policy>("policies").insertMany(policies);
+  await PolicyModel.insertMany(policies);
 
   // 3. Service Providers & Intermediaries
   const providers: ServiceProvider[] = [
@@ -265,7 +272,7 @@ export async function seedDatabase(): Promise<{
     },
     {
       provider_id: "AGT-3029",
-      provider_type: "CONTRACTOR", // Represents Agent/Broker
+      provider_type: "CONTRACTOR",
       business_name: "David Miller Insurance Brokerage",
       license_number: "TX-AGT-3029",
       tax_id: "74-1029384",
@@ -294,21 +301,17 @@ export async function seedDatabase(): Promise<{
       created_at: oneYearAgo,
     },
   ];
-  await db.collection<ServiceProvider>("service_providers").insertMany(providers);
+  await ServiceProviderModel.insertMany(providers);
 
-  // 4. Comprehensive Seed Claims (Apex Collusion Ring, VIN Recycling Ring, Provider Ring, Normal, and Invalid)
-  const d = (daysAgo: number) => new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
-
+  // 4. Comprehensive Seed Claims with Simplified 4-State ClaimStatus ("VALIDATED", "FLAGGED", "INVALID")
   const claims: Claim[] = [
-    // -------------------------------------------------------------
-    // RING 1: APEX AUTO COLLISION & BROKER COLLUSION RING (GAR-77401 + AGT-3029)
-    // -------------------------------------------------------------
+    // --- RING 1: APEX AUTO COLLISION RING (GAR-77401 + AGT-3029) ---
     {
       claim_id: "CLM-2026-0917-001",
       policy_id: "POL-AUTO-88219",
       customer_id: "CUST-1001",
       claim_type: "AUTO",
-      status: "READY_FOR_ANALYSIS",
+      status: "FLAGGED",
       incident_date: d(24),
       reported_date: d(24),
       claimed_amount: 6850.0,
@@ -324,6 +327,7 @@ export async function seedDatabase(): Promise<{
         auto: { vin: "1HGCR2F83HA019284", license_plate: "TX-ABC-1234", vehicle_make: "Honda", vehicle_model: "Accord", vehicle_year: 2021, estimated_repair_cost: 6850.0, drivable: true, police_report_filed: true },
       },
       validation_errors: [],
+      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring provider-broker nexus"],
       graph_sync_status: "PENDING",
       created_at: d(24),
       updated_at: d(24),
@@ -333,7 +337,7 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-99304",
       customer_id: "CUST-1002",
       claim_type: "AUTO",
-      status: "READY_FOR_ANALYSIS",
+      status: "FLAGGED",
       incident_date: d(22),
       reported_date: d(22),
       claimed_amount: 7200.0,
@@ -349,6 +353,7 @@ export async function seedDatabase(): Promise<{
         auto: { vin: "4T1B11HK5JU109482", license_plate: "TX-XYZ-9876", vehicle_make: "Toyota", vehicle_model: "Camry", vehicle_year: 2022, estimated_repair_cost: 7200.0, drivable: false, police_report_filed: true },
       },
       validation_errors: [],
+      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring provider-broker nexus"],
       graph_sync_status: "PENDING",
       created_at: d(22),
       updated_at: d(22),
@@ -358,7 +363,7 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-88219",
       customer_id: "CUST-1001",
       claim_type: "AUTO",
-      status: "INVESTIGATION_CANDIDATE",
+      status: "FLAGGED",
       incident_date: d(19),
       reported_date: d(19),
       claimed_amount: 8450.0,
@@ -374,7 +379,7 @@ export async function seedDatabase(): Promise<{
         auto: { vin: "1HGCR2F83HA019284", license_plate: "TX-ABC-1234", vehicle_make: "Honda", vehicle_model: "Accord", vehicle_year: 2021, estimated_repair_cost: 8450.0, drivable: false, police_report_filed: false },
       },
       validation_errors: [],
-      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring garage-agent nexus", "RISK_COST_OUTLIER_ANOMALY: Repair costs > 2.0 std dev"],
+      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring provider-broker nexus", "RISK_COST_OUTLIER_ANOMALY"],
       graph_sync_status: "PENDING",
       created_at: d(19),
       updated_at: d(19),
@@ -384,7 +389,7 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-99304",
       customer_id: "CUST-1002",
       claim_type: "AUTO",
-      status: "INVESTIGATION_CANDIDATE",
+      status: "FLAGGED",
       incident_date: d(16),
       reported_date: d(16),
       claimed_amount: 9100.0,
@@ -400,7 +405,7 @@ export async function seedDatabase(): Promise<{
         auto: { vin: "4T1B11HK5JU109482", license_plate: "TX-XYZ-9876", vehicle_make: "Toyota", vehicle_model: "Camry", vehicle_year: 2022, estimated_repair_cost: 9100.0, drivable: false, police_report_filed: false },
       },
       validation_errors: [],
-      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring garage-agent nexus", "RISK_REPEATED_ASSET_VELOCITY"],
+      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring provider-broker nexus"],
       graph_sync_status: "PENDING",
       created_at: d(16),
       updated_at: d(16),
@@ -410,7 +415,7 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-88219",
       customer_id: "CUST-1001",
       claim_type: "AUTO",
-      status: "INVESTIGATION_CANDIDATE",
+      status: "FLAGGED",
       incident_date: d(13),
       reported_date: d(13),
       claimed_amount: 7900.0,
@@ -426,7 +431,7 @@ export async function seedDatabase(): Promise<{
         auto: { vin: "1HGCR2F83HA019284", license_plate: "TX-ABC-1234", vehicle_make: "Honda", vehicle_model: "Accord", vehicle_year: 2021, estimated_repair_cost: 7900.0, drivable: true, police_report_filed: false },
       },
       validation_errors: [],
-      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring garage-agent nexus"],
+      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring provider-broker nexus"],
       graph_sync_status: "PENDING",
       created_at: d(13),
       updated_at: d(13),
@@ -436,7 +441,7 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-99304",
       customer_id: "CUST-1002",
       claim_type: "AUTO",
-      status: "INVESTIGATION_CANDIDATE",
+      status: "FLAGGED",
       incident_date: d(10),
       reported_date: d(10),
       claimed_amount: 8600.0,
@@ -452,26 +457,24 @@ export async function seedDatabase(): Promise<{
         auto: { vin: "4T1B11HK5JU109482", license_plate: "TX-XYZ-9876", vehicle_make: "Toyota", vehicle_model: "Camry", vehicle_year: 2022, estimated_repair_cost: 8600.0, drivable: false, police_report_filed: false },
       },
       validation_errors: [],
-      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring garage-agent nexus"],
+      risk_indicators: ["RISK_DENSE_MULTI_PARTY_CLUSTER: Co-occurring provider-broker nexus"],
       graph_sync_status: "PENDING",
       created_at: d(10),
       updated_at: d(10),
     },
 
-    // -------------------------------------------------------------
-    // RING 2: ASSET VELOCITY VIN RECYCLING RING (Cross-Policy VIN Reuse)
-    // -------------------------------------------------------------
+    // --- RING 2: ASSET VELOCITY VIN RECYCLING RING ---
     {
       claim_id: "CLM-2026-0929-009",
       policy_id: "POL-AUTO-1004A",
       customer_id: "CUST-1004",
       claim_type: "AUTO",
-      status: "INVESTIGATION_CANDIDATE",
+      status: "FLAGGED",
       incident_date: d(8),
       reported_date: d(8),
       claimed_amount: 12400.0,
       currency: "USD",
-      description: "Total structural front crush claimed on 2021 Honda Accord (VIN 1HGCR2F83HA019284).",
+      description: "Total structural front crush claimed on 2021 Honda Accord (reused VIN 1HGCR2F83HA019284).",
       location: { street: "Loop 410 & San Pedro", city: "San Antonio", state: "TX", postal_code: "78216" },
       involved_entities: [
         { entity_type: "GARAGE", entity_id: "GAR-88102", role: "REPAIR_FACILITY", name: "Lonestar Body & Paint" },
@@ -492,12 +495,12 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-1005A",
       customer_id: "CUST-1005",
       claim_type: "AUTO",
-      status: "INVESTIGATION_CANDIDATE",
+      status: "FLAGGED",
       incident_date: d(6),
       reported_date: d(6),
       claimed_amount: 14200.0,
       currency: "USD",
-      description: "Severe frame damage claimed on 2022 Toyota Camry (VIN 4T1B11HK5JU109482).",
+      description: "Severe frame damage claimed on 2022 Toyota Camry (reused VIN 4T1B11HK5JU109482).",
       location: { street: "Hwy 71 & Riverside", city: "Austin", state: "TX", postal_code: "78744" },
       involved_entities: [
         { entity_type: "GARAGE", entity_id: "GAR-88102", role: "REPAIR_FACILITY", name: "Lonestar Body & Paint" },
@@ -514,15 +517,13 @@ export async function seedDatabase(): Promise<{
       updated_at: d(6),
     },
 
-    // -------------------------------------------------------------
-    // RING 3: CLOSED-LOOP PROVIDER & BROKER RING (GAR-99210 + AGT-4401)
-    // -------------------------------------------------------------
+    // --- RING 3: CLOSED-LOOP PROVIDER & BROKER RING ---
     {
       claim_id: "CLM-2026-1001-011",
       policy_id: "POL-AUTO-1006A",
       customer_id: "CUST-1006",
       claim_type: "AUTO",
-      status: "UNDER_REVIEW",
+      status: "FLAGGED",
       incident_date: d(5),
       reported_date: d(5),
       claimed_amount: 5400.0,
@@ -548,7 +549,7 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-99304",
       customer_id: "CUST-1002",
       claim_type: "AUTO",
-      status: "UNDER_REVIEW",
+      status: "FLAGGED",
       incident_date: d(4),
       reported_date: d(4),
       claimed_amount: 6100.0,
@@ -573,7 +574,7 @@ export async function seedDatabase(): Promise<{
       policy_id: "POL-AUTO-1004A",
       customer_id: "CUST-1004",
       claim_type: "AUTO",
-      status: "UNDER_REVIEW",
+      status: "FLAGGED",
       incident_date: d(3),
       reported_date: d(3),
       claimed_amount: 4900.0,
@@ -594,15 +595,13 @@ export async function seedDatabase(): Promise<{
       updated_at: d(3),
     },
 
-    // -------------------------------------------------------------
-    // LEGITIMATE CONTROL GROUP CLAIMS (HEALTH & AUTO)
-    // -------------------------------------------------------------
+    // --- LEGITIMATE CLEAN CLAIMS ("VALIDATED") ---
     {
       claim_id: "CLM-2026-0915-003",
       policy_id: "POL-HLTH-44011",
       customer_id: "CUST-1003",
       claim_type: "HEALTH",
-      status: "READY_FOR_ANALYSIS",
+      status: "VALIDATED",
       incident_date: d(27),
       reported_date: d(27),
       claimed_amount: 3450.0,
@@ -613,13 +612,7 @@ export async function seedDatabase(): Promise<{
         { entity_type: "HOSPITAL", entity_id: "HSP-10920", role: "TREATMENT_FACILITY", name: "Austin Metro General Hospital" },
       ],
       claim_details: {
-        health: {
-          diagnosis_codes: ["R10.9", "K29.70"],
-          procedure_codes: ["99284", "74176"],
-          admission_date: d(27),
-          discharge_date: d(27),
-          treatment_facility_id: "HSP-10920",
-        },
+        health: { diagnosis_codes: ["R10.9", "K29.70"], procedure_codes: ["99284", "74176"], admission_date: d(27), discharge_date: d(27), treatment_facility_id: "HSP-10920" },
       },
       validation_errors: [],
       graph_sync_status: "PENDING",
@@ -642,11 +635,7 @@ export async function seedDatabase(): Promise<{
         { entity_type: "HOSPITAL", entity_id: "HSP-10920", role: "TREATMENT_FACILITY", name: "Austin Metro General Hospital" },
       ],
       claim_details: {
-        health: {
-          diagnosis_codes: ["M25.561"],
-          procedure_codes: ["73721"],
-          treatment_facility_id: "HSP-10920",
-        },
+        health: { diagnosis_codes: ["M25.561"], procedure_codes: ["73721"], treatment_facility_id: "HSP-10920" },
       },
       validation_errors: [],
       graph_sync_status: "PENDING",
@@ -663,7 +652,7 @@ export async function seedDatabase(): Promise<{
       reported_date: d(14),
       claimed_amount: 3200.0,
       currency: "USD",
-      description: "Minor bumper scrape while backing out of garage. DRP approved repair.",
+      description: "Minor bumper scrape while backing out of driveway.",
       location: { street: "Capital of Texas Hwy", city: "Austin", state: "TX", postal_code: "78746" },
       involved_entities: [
         { entity_type: "GARAGE", entity_id: "GAR-88102", role: "REPAIR_FACILITY", name: "Lonestar Body & Paint" },
@@ -678,9 +667,7 @@ export async function seedDatabase(): Promise<{
       updated_at: d(14),
     },
 
-    // -------------------------------------------------------------
-    // INVALID & RULE-TRAPPED CLAIMS (Trapped by Tier 1 & 2 Validation)
-    // -------------------------------------------------------------
+    // --- INVALID & RULE-TRAPPED CLAIMS ("INVALID") ---
     {
       claim_id: "CLM-2026-0919-004",
       policy_id: "POL-AUTO-EXPIRED",
@@ -691,7 +678,7 @@ export async function seedDatabase(): Promise<{
       reported_date: d(20),
       claimed_amount: 5100.0,
       currency: "USD",
-      description: "Fender damage in private parking facility.",
+      description: "Fender damage in private parking facility on expired policy.",
       location: { street: "502 River Walk", city: "San Antonio", state: "TX", postal_code: "78205" },
       involved_entities: [
         { entity_type: "GARAGE", entity_id: "GAR-88102", role: "REPAIR_FACILITY", name: "Lonestar Body & Paint" },
@@ -714,7 +701,7 @@ export async function seedDatabase(): Promise<{
       claim_type: "AUTO",
       status: "INVALID",
       incident_date: d(1),
-      reported_date: d(5), // Temporal inversion: Reported date is 4 days BEFORE incident date!
+      reported_date: d(5), // Temporal Inversion: Reported before occurred!
       claimed_amount: 8500.0,
       currency: "USD",
       description: "Rear collision damage with inverted filing dates.",
@@ -740,7 +727,7 @@ export async function seedDatabase(): Promise<{
       status: "INVALID",
       incident_date: d(12),
       reported_date: d(12),
-      claimed_amount: 95000.0, // Policy limit is $50,000!
+      claimed_amount: 95000.0, // Exceeds limit of $50,000!
       currency: "USD",
       description: "Excessive loss claim for vehicle water damage exceeding policy financial ceiling.",
       location: { street: "Congress Ave", city: "Austin", state: "TX", postal_code: "78701" },
@@ -758,9 +745,9 @@ export async function seedDatabase(): Promise<{
       updated_at: d(12),
     },
   ];
-  await db.collection<Claim>("claims").insertMany(claims);
+  await ClaimModel.insertMany(claims);
 
-  // 5. Complete Event Audit Logs for all Claims
+  // 5. Complete Event Audit Logs using simplified 4 EventTypes
   const events: ClaimEvent[] = [];
   for (const c of claims) {
     events.push({
@@ -780,39 +767,40 @@ export async function seedDatabase(): Promise<{
         event_id: `EVT-FAIL-${c.claim_id}`,
         claim_id: c.claim_id,
         event_type: "VALIDATION_FAILED",
-        from_status: "VALIDATING",
+        from_status: "RECEIVED",
         to_status: "INVALID",
         timestamp: c.incident_date,
         trigger_source: "VALIDATION_ENGINE",
         actor: "validation_engine",
         details: { errors: c.validation_errors },
       });
+    } else if (c.status === "FLAGGED") {
+      events.push({
+        event_id: `EVT-FLAG-${c.claim_id}`,
+        claim_id: c.claim_id,
+        event_type: "FRAUD_FLAGGED",
+        from_status: "RECEIVED",
+        to_status: "FLAGGED",
+        timestamp: c.created_at,
+        trigger_source: "FRAUD_DETECTION_ENGINE",
+        actor: "fraud_detector",
+        details: { risk_indicators: c.risk_indicators },
+      });
     } else {
       events.push({
         event_id: `EVT-PASS-${c.claim_id}`,
         claim_id: c.claim_id,
-        event_type: "VALIDATION_SUCCEEDED",
-        from_status: "VALIDATING",
+        event_type: "VALIDATION_PASSED",
+        from_status: "RECEIVED",
         to_status: "VALIDATED",
-        timestamp: c.incident_date,
+        timestamp: c.created_at,
         trigger_source: "VALIDATION_ENGINE",
         actor: "validation_engine",
         details: { policy_id: c.policy_id },
       });
-      events.push({
-        event_id: `EVT-ENRICH-${c.claim_id}`,
-        claim_id: c.claim_id,
-        event_type: "ENRICHMENT_COMPLETED",
-        from_status: "VALIDATED",
-        to_status: c.status,
-        timestamp: c.created_at,
-        trigger_source: "ENRICHMENT_SERVICE",
-        actor: "enrichment_worker",
-        details: { location_geocoded: true, normalized: true },
-      });
     }
   }
-  await db.collection<ClaimEvent>("claim_events").insertMany(events);
+  await ClaimEventModel.insertMany(events);
 
   return {
     customersCount: customers.length,

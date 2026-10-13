@@ -1,4 +1,4 @@
-import { getDatabase, ensureIndexes } from "@/lib/db/mongodb";
+import { connectMongoose, ClaimModel, PolicyModel, CustomerModel } from "@/lib/models";
 import { testNeo4jConnection } from "@/lib/db/neo4j";
 import { getClaims, getClaimsSummary } from "@/lib/services/claim-service";
 import { ClaimsDashboard } from "@/components/ClaimsDashboard";
@@ -20,15 +20,13 @@ export default async function HomePage() {
   };
 
   try {
-    await ensureIndexes();
-    const db = await getDatabase();
-    await db.command({ ping: 1 });
+    await connectMongoose();
     mongoStatus = "CONNECTED";
 
     const [cCount, pCount, custCount, claimsList, sum] = await Promise.all([
-      db.collection("claims").countDocuments(),
-      db.collection("policies").countDocuments(),
-      db.collection("customers").countDocuments(),
+      ClaimModel.countDocuments(),
+      PolicyModel.countDocuments(),
+      CustomerModel.countDocuments(),
       getClaims({ limit: 100 }),
       getClaimsSummary(),
     ]);
@@ -41,7 +39,7 @@ export default async function HomePage() {
     claims = JSON.parse(JSON.stringify(claimsList));
     summary = JSON.parse(JSON.stringify(sum));
   } catch (err) {
-    console.error("[HomePage] Error connecting to MongoDB:", err);
+    console.error("[HomePage] Error connecting to MongoDB via Mongoose:", err);
     mongoStatus = "ERROR";
   }
 
